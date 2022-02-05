@@ -8,6 +8,7 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 
 const SingleQuote = (props) => {
+  // console.log(props);
   const [isFavourite, setFavourite] = useState(props.isFavourite)
 
   function addFavourite() {
@@ -74,10 +75,13 @@ function Quotes(props) {
     getQuotes();
   }, []);
 
+  const [focusCount, setFocusCount] = useState(0);
+
   useFocusEffect(
-    useCallback(()=>{
-      console.log(props.userFavourites.length)
-    },[props.userFavourites])
+    useCallback(() => {
+      setFocusCount(focusCount + 1)
+      // console.log(focusCount, props.userFavourites)
+    }, [props.userFavourites])
   )
 
 
@@ -85,11 +89,13 @@ function Quotes(props) {
     <SafeAreaView style={styles.container}>
       {isLoading ? <ActivityIndicator /> : (
         <FlatList
-          data={data}
-          extraData={props.userFavourites}
+          data={data}          
+          keyExtractor={(item, index) => (data.length*focusCount + index)}
+          // extraData={focusCount}
           renderItem={({ item }) => (
-            <SingleQuote text={item.text} author={item.author}
-              isFavourite={props.quoteInFavourite(item)}
+            <SingleQuote text={item.text}
+              author={item.author}
+              isFavourite={props.quoteInFavourite(props.userFavourites, item)}
               addFavourite={props.addFavourite}
               removeFavourite={props.removeFavourite}
             />
@@ -106,10 +112,10 @@ function Favourites(props) {
     <SafeAreaView style={styles.container}>
       <FlatList
         data={props.userFavourites}
-        // data={userFavs}
+        keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
           <SingleQuote text={item.text} author={item.author}
-            isFavourite={props.quoteInFavourite(item)}
+            isFavourite={props.quoteInFavourite(props.userFavourites, item)}
             addFavourite={props.addFavourite}
             removeFavourite={props.removeFavourite}
           />
@@ -181,9 +187,13 @@ function App() {
     }
   }
 
-  function quoteInFavourite(item) {
-    // console.log(userFavourites.length)
-    return userFavourites.find(e => JSON.stringify(e) == JSON.stringify(item)) != undefined
+  function quoteInFavourite(userFavs, item) {
+    
+    const y = userFavs.find(e => JSON.stringify(e) == JSON.stringify(item)) != undefined
+    
+    // console.log(y)
+
+    return y
   }
 
   const storeFavourites = async () => {
@@ -231,7 +241,7 @@ function App() {
 
     newUserFavs.splice(idx, 1)
 
-    console.log(newUserFavs)
+    // console.log(newUserFavs)
     setUserFavourites([...newUserFavs])
 
     storeFavourites()
