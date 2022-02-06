@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, TextInput, Button, SafeAreaView, FlatList, Text, View, ActivityIndicator, Pressable } from 'react-native';
+import { StyleSheet, TextInput, SafeAreaView, FlatList, Text, View, ActivityIndicator, Pressable } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
@@ -64,7 +64,8 @@ function Quotes(props) {
 
       const response = await fetch(url);
       const json = await response.json();
-      setData(json.slice(0, 10));
+      // setData(json.slice(0, 10));
+      setData(json);
     } catch (error) {
       console.error(error);
     } finally {
