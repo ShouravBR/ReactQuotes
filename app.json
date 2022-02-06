@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "MyQuotes",
-    "slug": "MyQuotes",
+    "name": "ReactQuotes",
+    "slug": "ReactQuotes",
     "version": "1.0.0",
     "assetBundlePatterns": [
       "**/*"
     ]
   },
-  "name": "MyQuotes"
+  "name": "ReactQuotes"
 }
