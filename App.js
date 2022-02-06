@@ -6,7 +6,24 @@ import { AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+// import { Sentiment } from 'sentiment';
 
+
+var Sentiment = require('sentiment');
+var sentiment = new Sentiment();
+
+const SentimentText = (props) => {
+  const senti = sentiment.analyze(props.text);
+  const idx = senti.score > 1 ? 0 : senti.score >= -1 ? 1 : 2
+  const sentiIcon = ['smileo', 'meh', 'frowno']
+  const sentiText = ['Happy', 'Neutral', 'Sad']
+
+  return (
+    <Text>
+      <AntDesign name={sentiIcon[idx]}></AntDesign> {sentiText[idx]}
+      </Text>
+  )
+}
 
 const SingleQuote = (props) => {
   // console.log(props);
@@ -20,8 +37,6 @@ const SingleQuote = (props) => {
     setFavourite(false)
     props.removeFavourite(props.text, props.author)
   }
-  // useIsFocused();
-  // console.log(props.isFavourite)
 
   return (
     <View style={styles.singlequotecontainer}>
@@ -44,7 +59,7 @@ const SingleQuote = (props) => {
 
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
-          <Text>Sentiment</Text>
+          <SentimentText text="props.text" />
         </View>
       </View>
 
@@ -149,7 +164,7 @@ function MyQuotes(props) {
               padding: 5,
             }}>
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-start' }}>
-                <Pressable onPress={()=>{ props.deleteQuote(item)}}
+                <Pressable onPress={() => { props.deleteQuote(item) }}
                 >
                   <AntDesign name={"delete"}></AntDesign>
                 </Pressable>
@@ -164,7 +179,7 @@ function MyQuotes(props) {
       />
       <View style={styles.container}>
         <Pressable style={styles.AddQuoteContainer}
-        onPress={() => { navigation.navigate('Add Quote') }}
+          onPress={() => { navigation.navigate('Add Quote') }}
         >
           <AntDesign name={"plus"} style={styles.AddQuoteIcon}></AntDesign>
         </Pressable>
@@ -179,7 +194,7 @@ function AddQuote(props) {
 
   const [quoteText, setQuoteText] = useState("");
   const [quoteAuthor, setQuoteAuthor] = useState("Me");
-  
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -198,10 +213,10 @@ function AddQuote(props) {
       </View>
       <View style={styles.container}>
         <Pressable style={styles.submitQuoteButton}
-          onPress={() => { 
+          onPress={() => {
             props.submitQuote(quoteText, quoteAuthor)
-            navigation.navigate('My Quotes') 
-            }}>
+            navigation.navigate('My Quotes')
+          }}>
           <AntDesign name={"addfile"} style={styles.AddQuoteIcon}>
             <Text>Add quote</Text>
           </AntDesign>
@@ -378,7 +393,7 @@ function App() {
     }
   }
 
-  function submitQuote(text, author){
+  function submitQuote(text, author) {
     const newUserQuotes = userQuotes
     newUserQuotes.push({
       'text': text,
@@ -389,7 +404,7 @@ function App() {
     storeQuotes()
   }
 
-  function deleteQuote(quoteItem){
+  function deleteQuote(quoteItem) {
     const newUserQuotes = userQuotes
 
     const idx = newUserQuotes.findIndex(e => JSON.stringify(e) == JSON.stringify(quoteItem))
