@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Button, SafeAreaView, FlatList, Text, View, ActivityIndicator, Pressable } from 'react-native';
+import { StyleSheet, TextInput, Button, SafeAreaView, FlatList, Text, View, ActivityIndicator, Pressable } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AntDesign } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 
 const SingleQuote = (props) => {
@@ -89,8 +90,8 @@ function Quotes(props) {
     <SafeAreaView style={styles.container}>
       {isLoading ? <ActivityIndicator /> : (
         <FlatList
-          data={data}          
-          keyExtractor={(item, index) => (data.length*focusCount + index)}
+          data={data}
+          keyExtractor={(item, index) => (data.length * focusCount + index)}
           // extraData={focusCount}
           renderItem={({ item }) => (
             <SingleQuote text={item.text}
@@ -125,14 +126,108 @@ function Favourites(props) {
   );
 }
 
-function MyQuotes() {
+const Stack = createNativeStackNavigator();
+
+function MyQuotes(props) {
+  const navigation = useNavigation();
+  console.log('myquotes-screen:', props);
+
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Write your own quote!</Text>
-      <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end' }}>
-        <Button title="Add" />
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={props.userQuotes}
+        keyExtractor={(item, index) => (index)}
+        renderItem={({ item }) => (
+          <View style={styles.singlequotecontainer}>
+            <View style={styles.singlequote}>
+              <Text style={styles.text}>{item.text}</Text>
+              <Text>{item.author}</Text>
+            </View>
+            <View style={{
+              flexDirection: 'row',
+              padding: 5,
+            }}>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-start' }}>
+                <Pressable onPress={()=>{ props.deleteQuote(item)}}
+                >
+                  <AntDesign name={"delete"}></AntDesign>
+                </Pressable>
+
+              </View>
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
+                <Text>Sentiment</Text>
+              </View>
+            </View>
+          </View>
+        )}
+      />
+      <View style={styles.container}>
+        <Pressable style={styles.AddQuoteContainer}
+        onPress={() => { navigation.navigate('Add Quote') }}
+        >
+          <AntDesign name={"plus"} style={styles.AddQuoteIcon}></AntDesign>
+        </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
+  );
+}
+
+function AddQuote(props) {
+  const navigation = useNavigation();
+  // console.log(props)
+
+  const [quoteText, setQuoteText] = useState("");
+  const [quoteAuthor, setQuoteAuthor] = useState("Me");
+  
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.inputContainer}>
+        <TextInput style={styles.inputQuote}
+          multiline={true}
+          numberOfLines={5}
+          onChangeText={newText => setQuoteText(newText)}
+        />
+      </View>
+      <View style={styles.inputContainer}>
+        <TextInput style={styles.inputName}
+          onChangeText={newText => setQuoteAuthor(newText)}
+          value="Me"
+        />
+      </View>
+      <View style={styles.container}>
+        <Pressable style={styles.submitQuoteButton}
+          onPress={() => { 
+            props.submitQuote(quoteText, quoteAuthor)
+            navigation.navigate('My Quotes') 
+            }}>
+          <AntDesign name={"addfile"} style={styles.AddQuoteIcon}>
+            <Text>Add quote</Text>
+          </AntDesign>
+
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  )
+}
+function MyQuotesStack(props) {
+  // console.log(props);
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="My Quotes" children={() =>
+        <MyQuotes
+          userQuotes={props.userQuotes}
+          deleteQuote={props.deleteQuote}
+        />}
+      />
+      <Stack.Screen name="Add Quote" children={() =>
+        <AddQuote
+          submitQuote={props.submitQuote}
+        />}
+      />
+    </Stack.Navigator>
+
+
   );
 }
 
@@ -158,8 +253,14 @@ function MyTabs(props) {
             <AntDesign name="heart" color={color} size={size} />
           ),
         }} />
-      <Tab.Screen name="My Quotes" component={MyQuotes}
+      <Tab.Screen name="My Quotes Stack"
+        children={() => <MyQuotesStack
+          userQuotes={props.userQuotes}
+          submitQuote={props.submitQuote}
+          deleteQuote={props.deleteQuote}
+        />}
         options={{
+          headerShown: false,
           tabBarLabel: 'My Quotes',
           tabBarIcon: ({ color, size }) => (
             <AntDesign name="form" color={color} size={size} />
@@ -188,9 +289,9 @@ function App() {
   }
 
   function quoteInFavourite(userFavs, item) {
-    
+
     const y = userFavs.find(e => JSON.stringify(e) == JSON.stringify(item)) != undefined
-    
+
     // console.log(y)
 
     return y
@@ -247,43 +348,78 @@ function App() {
     storeFavourites()
   }
 
+  const [isQuotesLoading, setQuotesLoading] = useState(true);
+  const [userQuotes, setUserQuotes] = useState([]);
+
+  const getUserQuotes = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('Quotes')
+      // console.log(jsonValue)
+      const json = jsonValue != null ? JSON.parse(jsonValue) : [];
+      setUserQuotes(json);
+
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setQuotesLoading(false);
+    }
+  }
+
+  const storeQuotes = async () => {
+    try {
+      const jsonValue = JSON.stringify(userQuotes)
+      await AsyncStorage.setItem('Quotes', jsonValue)
+      // console.log(jsonValue)
+    } catch (e) {
+      console.error('error updating User Quotes')
+    } finally {
+      console.log('User Quotes updated', userQuotes)
+    }
+  }
+
+  function submitQuote(text, author){
+    const newUserQuotes = userQuotes
+    newUserQuotes.push({
+      'text': text,
+      'author': author
+    })
+
+    setUserQuotes([...newUserQuotes])
+    storeQuotes()
+  }
+
+  function deleteQuote(quoteItem){
+    const newUserQuotes = userQuotes
+
+    const idx = newUserQuotes.findIndex(e => JSON.stringify(e) == JSON.stringify(quoteItem))
+
+    if (idx < 0) {
+      console.error('quote', text, 'not in User Quotes')
+    }
+
+    newUserQuotes.splice(idx, 1)
+    setUserQuotes([...newUserQuotes])
+
+    storeQuotes()
+  }
+
   useEffect(() => {
     getUserFavourites();
+    getUserQuotes();
   }, []);
-
-  // //TODO: move later
-  // const [isQuotesLoading, setQuotesLoading] = useState(true);
-  // const [userQuotes, setUserQuotes] = useState([]);
-
-
-
-  // const getUserQuotes = async () => {
-  //   try {
-  //     const jsonValue = await AsyncStorage.getItem('Quotes')
-  //     const json = jsonValue != null ? JSON.parse(jsonValue) : [];
-  //     setUserQuotes(json);
-  //     // global.quotes = json;
-  //   } catch (error) {
-  //     console.error(error);
-  //   } finally {
-  //     setQuotesLoading(false);
-  //   }
-  // }
-
-  // useEffect(() => {
-  //   // getUserFavourites();
-  //   // getUserQuotes();
-  // }, []);
 
   return (
     <NavigationContainer>
-      {isFavouritesLoading ? <ActivityIndicator /> : (
+      {isFavouritesLoading & isQuotesLoading ? <ActivityIndicator /> : (
         <MyTabs
           userFavourites={userFavourites}
-          // setUserFavourites={setUserFavourites}
+          quoteInFavourite={quoteInFavourite}
           addFavourite={addFavourite}
           removeFavourite={removeFavourite}
-          quoteInFavourite={quoteInFavourite} />
+          userQuotes={userQuotes}
+          submitQuote={submitQuote}
+          deleteQuote={deleteQuote}
+        />
       )}
     </NavigationContainer>
   );
@@ -308,6 +444,41 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  AddQuoteContainer: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    right: 20,
+    bottom: 20,
+    backgroundColor: '#03A9F4',
+    borderRadius: 30,
+    elevation: 8
+  },
+  AddQuoteIcon: {
+    fontSize: 40,
+    color: 'white'
+  },
+  inputQuote: {
+    height: 200,
+    margin: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  inputName: {
+    height: 40,
+    margin: 12,
+    borderWidth: 1,
+    padding: 10,
+  },
+  submitQuoteButton: {
+    backgroundColor: '#03A9F4',
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    margin: 12,
+    padding: 5,
   }
 });
 
