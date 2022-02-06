@@ -171,7 +171,7 @@ function MyQuotes(props) {
 
               </View>
               <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
-                <Text>Sentiment</Text>
+                <SentimentText text="item.text" />
               </View>
             </View>
           </View>
